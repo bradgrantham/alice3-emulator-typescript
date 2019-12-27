@@ -1,0 +1,21 @@
+{
+  "name": "alice3-emulator-typescript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tslint --project ."
+  },
+  "keywords": [],
+  "author": "Brad Grantham <grantham@plunk.org> (https://www.plunk.org/~grantham/)",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^12.12.21",
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.4"
+  },
+  "dependencies": {
+    "z80-emulator": "file:../z80-emulator"
+  }
+}
