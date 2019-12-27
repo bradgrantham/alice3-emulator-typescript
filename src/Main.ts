@@ -94,7 +94,6 @@ class Alice3Machine implements Hal {
     }
 
     writeMemory(address: number, value: number): void {
-        // console.log("write " + value + " to " + address);
         this.memory[address] = value;
     }
 
@@ -118,7 +117,12 @@ class Alice3Machine implements Hal {
     handleReadDMA(disk: number, sector: number, track: number, address: number) : void
     {
         let location = (track * this.sectorsPerTrack + sector) * this.sectorSize;
-        fs.readSync(this.diskFiles[disk], this.buffer, 0, this.sectorSize, location);
+        // console.log("read " + disk + ", " + sector + ", " + track + " (" + location + ") to " + address);
+        let read = fs.readSync(this.diskFiles[disk], this.buffer, 0, this.sectorSize, location);
+        if(read != this.sectorSize) {
+            console.log("only read " + read + " bytes");
+            process.exit();
+        }
         this.alice3PortReadQueue.push(this.alice3ResponseSuccess);
         this.buffer.forEach((byte) => { this.memory[address] = byte; address += 1; });
     }
@@ -126,10 +130,15 @@ class Alice3Machine implements Hal {
     handleWriteDMA(disk: number, sector: number, track: number, address: number) : void
     {
         let location = (track * this.sectorsPerTrack + sector) * this.sectorSize;
+        // console.log("write " + disk + ", " + sector + ", " + track + " (" + location + ") from " + address);
         for(var i = 0; i < this.sectorSize; i++) {
             this.buffer[i] = memory[address + i];
         }
-        fs.writeSync(this.diskFiles[disk], this.buffer, 0, this.sectorSize, location);
+        let wrote = fs.writeSync(this.diskFiles[disk], this.buffer, 0, this.sectorSize, location);
+        if(wrote != this.sectorSize) {
+            console.log("only wrote " + wrote + " bytes");
+            process.exit();
+        }
         this.alice3PortReadQueue.push(this.alice3ResponseSuccess);
     }
 
@@ -194,7 +203,7 @@ class Alice3Machine implements Hal {
                     this.handleWriteDMA(disk, sector, track, address);
                 }
             } else if(currentLength == 1) {
-                console.log("unknown alice command byte " + value + " to port " + address);
+                console.log("unimplemented alice command byte " + value + " to port " + address);
                 process.exit();
             }
         } else {
@@ -207,7 +216,7 @@ class Alice3Machine implements Hal {
 function usage(argv0: string) {
     console.log("usage: " + process.argv0 + " [options] memoryimage.bin");
     console.log("options:");
-    console.log("\t-disk disk.img");
+    console.log("\t--disk disk.img");
 }
 
 var diskFileNames: Array<string> = [];
