@@ -1,11 +1,10 @@
 // Alice 3 emulation for https://github.com/lkesteloot/z80-emulator
 
 // import {Delegate, Register, Runner, toHex, hi} from "z80-test";
-import {hi, lo} from "z80-test";
+import {hi, lo} from "z80-base";
 import fs from "fs";
 import readline from "readline";
-import {Z80} from "./Z80";
-import {Hal} from "./Hal";
+import {Z80,Hal} from "z80-emulator";
 
 /**
  * Alice 3 HAL

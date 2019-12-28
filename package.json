@@ -5,9 +5,14 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "lint": "tslint --project ."
+    "lint": "tslint --project .",
+    "cpm": "node dist/Main.js --disk cpmboot.dsk --disk wordstar.dsk cpmloader.bin"
   },
-  "keywords": [],
+  "keywords": [
+    "z80",
+    "cp/m",
+    "emulator"
+  ],
   "author": "Brad Grantham <grantham@plunk.org> (https://www.plunk.org/~grantham/)",
   "license": "ISC",
   "devDependencies": {
@@ -16,6 +21,6 @@
     "typescript": "^3.7.4"
   },
   "dependencies": {
-    "z80-emulator": "file:../z80-emulator"
+    "z80-emulator": "^1.0.1"
   }
 }
