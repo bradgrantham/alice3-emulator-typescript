@@ -74,8 +74,7 @@ class Alice3Machine implements Hal {
     }
 
     readMemory(address: number): number {
-        const value = this.memory[address];
-        return value;
+        return this.memory[address];
     }
 
     readPort(address: number): number {
@@ -114,15 +113,24 @@ class Alice3Machine implements Hal {
         }
     }
 
+    calculateSum(buffer: Buffer) : number {
+        let sum = 0;
+        this.buffer.forEach((byte) => { sum += byte; });
+        return sum;
+    }
+
     handleReadDMA(disk: number, sector: number, track: number, address: number) : void
     {
         let location = (track * this.sectorsPerTrack + sector) * this.sectorSize;
-        // console.log("read " + disk + ", " + sector + ", " + track + " (" + location + ") to " + address);
         let read = fs.readSync(this.diskFiles[disk], this.buffer, 0, this.sectorSize, location);
+        // console.log("read " + disk + ", " + sector + ", " + track + " (" + location + ") to " + address + " checksum " + this.calculateSum(this.buffer));
         if(read != this.sectorSize) {
             console.log("only read " + read + " bytes");
             process.exit();
         }
+        this.alice3PortReadQueue.push(0);
+        this.alice3PortReadQueue.push(0);
+        this.alice3PortReadQueue.push(0);
         this.alice3PortReadQueue.push(this.alice3ResponseSuccess);
         this.buffer.forEach((byte) => { this.memory[address] = byte; address += 1; });
     }
@@ -130,22 +138,17 @@ class Alice3Machine implements Hal {
     handleWriteDMA(disk: number, sector: number, track: number, address: number) : void
     {
         let location = (track * this.sectorsPerTrack + sector) * this.sectorSize;
-        // console.log("write " + disk + ", " + sector + ", " + track + " (" + location + ") from " + address);
         for(var i = 0; i < this.sectorSize; i++) {
-            this.buffer[i] = memory[address + i];
+            this.buffer[i] = this.memory[address + i];
         }
+        // console.log("write " + disk + ", " + sector + ", " + track + " (" + location + ") from " + address + " checksum " + this.calculateSum(this.buffer));
         let wrote = fs.writeSync(this.diskFiles[disk], this.buffer, 0, this.sectorSize, location);
         if(wrote != this.sectorSize) {
             console.log("only wrote " + wrote + " bytes");
             process.exit();
         }
+        fs.fsyncSync(this.diskFiles[disk]);
         this.alice3PortReadQueue.push(this.alice3ResponseSuccess);
-    }
-
-    calculateSum(buffer: Buffer) : number {
-        let sum = 0;
-        this.buffer.forEach((byte) => { sum += byte; });
-        return sum;
     }
 
     handleReadSum(disk: number, sector: number, track: number) : void
@@ -161,9 +164,13 @@ class Alice3Machine implements Hal {
 
     writePort(address: number, value: number): void {
         address = lo(address);
+
         if(address == this.alice3CONOUTPort) {
+
             process.stdout.write(String.fromCharCode(value));
+
         } else if(address == this.alice3CommandPort) {
+
             var currentLength = this.alice3CommandBytes.push(value);
 
             if(this.alice3CommandBytes[0] == this.alice3CommandCONST) {
@@ -243,7 +250,7 @@ if(process.argv.length < 1) {
 var memoryFileName = process.argv[0];
 
 // Read initial memory, including ROM
-let memory = fs.readFileSync(memoryFileName);
+let initialMemory = fs.readFileSync(memoryFileName);
 
 // Set up raw keyboard access
 // const readline = require('readline');
@@ -256,7 +263,7 @@ process.stdin.on('keypress', (str, key) => {
     alice3.addKey(str.charCodeAt(0));
 });
 
-let alice3 = new Alice3Machine(memory, diskFileNames);
+let alice3 = new Alice3Machine(initialMemory, diskFileNames);
 let z80 = new Z80(alice3);
 
 z80.reset();
